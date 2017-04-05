@@ -1,0 +1,5 @@
+venv
+data
+*.pyc
+insight_testsuite/temp
+log_input/log.txt

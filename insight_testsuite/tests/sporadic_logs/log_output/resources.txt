@@ -1,0 +1,10 @@
+/shuttle/missions/sts-71/movies/sts-71-launch.mpg
+/shuttle/missions/sts-71/movies/sts-71-hatch-hand-group.mpg
+/history/apollo/apollo-13/movies/apo13home.mpg
+/
+/shuttle/movies/TDRSopen.mpg
+/images/launch.gif
+/shuttle/technology/sts-newsref/sts_overview.html
+/shuttle/technology/sts-newsref/sts_asm.html
+/shuttle/missions/sts-69/sts69.jpg
+/history/apollo/apollo-1/apollo-1-patch.jpg

@@ -1,0 +1,10 @@
+piweba3y.prodigy.com,4
+alyssa.prodigy.com,3
+siltb10.orl.mmc.com,3
+piweba1y.prodigy.com,2
+gateway.cary.ibm.com,2
+128.158.26.178,2
+bocagate.bocaraton.ibm.com,2
+relay.urz.uni-heidelberg.de,2
+sgigate.sgi.com,2
+www-b6.proxy.aol.com,2
