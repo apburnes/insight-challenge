@@ -16,10 +16,11 @@ class ProcessLog(object):
         self.exception_count = int(0)
         self.exceptions = list()
         self.hosts = dict()
+        self.hours = dict()
+        self.high_hours = dict()
         self.line_count = int(0)
         self.req_count = dict()
         self.req_start = int(0)
-        self.req_total = dict()
         self.resources = dict()
 
     def run(self):
@@ -32,38 +33,41 @@ class ProcessLog(object):
                         self.req_start = log['epoch']
 
                     self.line_counter()
+                    self.log_counter('req_count', log, 'epoch')
+                    self.hour_counter(log['epoch'])
                     self.log_counter('hosts', log, 'host')
                     self.log_counter('resources', log, 'resource', 'req_size')
                     self.block_counter(log, line)
-                    self.req_counter(log)
                 except:
                     self.exception_counter()
                     self.exceptions.append(line)
 
+        self.high_hour_counter()
+
         sorted_hosts = self.sort_value('hosts')
         sorted_resources = self.sort_value('resources')
-        sorted_req_total = self.sort_attr('req_total')
+        sorted_high_hours = self.sort_attr('high_hours')
 
         hosts = open(self.hosts_out, 'w')
         for h in sorted_hosts:
-            hosts.write('{0},{1}\n'.format(h[0],h[1]))
+           hosts.write('{0},{1}\n'.format(h[0],h[1]))
         hosts.close()
 
         resources = open(self.resources_out, 'w')
         for r in sorted_resources:
-            resources.write('{0}\n'.format(r[0]))
+           resources.write('{0}\n'.format(r[0]))
         resources.close()
 
         blocked = open(self.blocked_out, 'w')
         for b in self.blocked:
-            blocked.write(b)
+           blocked.write(b)
         blocked.close()
 
         hours = open(self.hours_out, 'w')
-        for r in sorted_req_total:
-            s = epoch_to_string(r[0])
-            f = '{0} -0400'.format(s)
-            hours.write('{0},{1}\n'.format(f, r[1]))
+        for h in sorted_high_hours:
+            s = epoch_to_string(h[0])
+            formated_date = '{0} -0400'.format(s)
+            hours.write('{0},{1}\n'.format(formated_date, h[1]))
         hours.close()
 
         return None
@@ -122,6 +126,47 @@ class ProcessLog(object):
     def exception_counter(self):
         self.exception_count = self.exception_count + 1
 
+    def hour_counter(self, epoch):
+        date_format = '%Y%m%d%H'
+        str_hour = epoch_to_string(epoch, date_format)
+        hour_epoch = create_epoch(str_hour, date_format)
+        self.increment('hours', hour_epoch)
+
+    def high_hour_counter(self):
+        hours = self.sort_attr('hours')
+
+        for hour in hours:
+            hour_key = hour[0]
+            hour_value = hour[1]
+
+            if hour_key < self.req_start:
+                hour_key = self.req_start
+
+            for i in range(3600):
+                update_high_hours = dict()
+                attr = hour_key+i
+
+                for s in range(3600):
+                    sec = attr + s
+                    if sec in self.req_count:
+                        increment = self.req_count[sec]
+                        self.increment('high_hours', attr, increment)
+
+                update_sorted = self.sort_attr('high_hours')
+
+                for hr in update_sorted:
+                    update_high_hours[hr[0]] = hr[1]
+
+                self.high_hours = update_high_hours
+
+    def increment(self, attr_key, log_key, increment=1):
+        attr = getattr(self, attr_key)
+
+        if log_key in attr:
+            attr[log_key] = attr[log_key] + increment
+        else:
+            attr[log_key] = increment
+
     def line_counter(self):
         self.line_count += 1
 
@@ -133,50 +178,6 @@ class ProcessLog(object):
             attr[log[log_key]] = attr[log[log_key]] + increment
         else:
             attr[log[log_key]] = increment
-
-    def increment(self, attr_key, log_key, increment=1):
-        attr = getattr(self, attr_key)
-
-        if log_key in attr:
-            attr[log_key] = attr[log_key] + increment
-        else:
-            attr[log_key] = increment
-
-    def req_counter(self, log):
-        epoch = log['epoch']
-        diff = diff_epoch(epoch, self.req_start)
-
-        if diff == 0.0:
-            self.increment('req_count', epoch)
-        elif diff > 0.0 and diff <= 3600.0:
-            for i in range(int(diff)+1):
-                log_key = epoch - i
-                self.increment('req_count', log_key)
-        else:
-            for i in range(3601):
-                log_key = epoch - i
-                self.increment('req_count', log_key)
-
-        self.reqs_per_hour(epoch)
-
-    def reqs_per_hour(self, epoch):
-        total = dict()
-        req_counts = self.sort_attr('req_count', False)
-
-        for req in req_counts:
-            diff = diff_epoch(epoch, req[0])
-
-            if diff <= 3600.0:
-                self.req_total[req[0]] = req[1]
-            else:
-                del self.req_count[req[0]]
-
-        req_total = sort_attr('req_total')
-
-        for req in req_total:
-            total[req[0]] = req[1]
-
-        self.req_total = total
 
     def sort_attr(self, attr_key, count=10, reverse=True, sort_by=1):
         attr = getattr(self, attr_key)
@@ -195,21 +196,6 @@ class ProcessLog(object):
         values_sorted = sorted(attr.items(), key=operator.itemgetter(1))
 
         if reverse == True:
-            return list(reversed(values_sorted))[:10]
+            return list(reversed(values_sorted))[:count]
         else:
-            return values_sorted[:10]
-
-    def traffic_counter(self):
-        reqs = self.sort_attr('req_counts', False, False)
-        start = reqs[0][0]
-        end = reqs[-1][0]
-
-        while start <= end:
-            self.traffic[start] = 0
-
-            for i in range(3600):
-                attr = float(start+i)
-                if attr in self.req_counts:
-                    self.traffic[start] = self.traffic[start] + self.req_counts[start+i]
-
-            start += 1
+            return values_sorted[:count]

@@ -1,12 +1,9 @@
 import os, re, time
 from datetime import datetime
 
-def create_epoch(date_string):
-    epoch = datetime.strptime(date_string,'%d/%b/%Y:%H:%M:%S').strftime('%s')
+def create_epoch(date_string, str_format='%d/%b/%Y:%H:%M:%S'):
+    epoch = datetime.strptime(date_string,str_format).strftime('%s')
     return float(epoch)
-
-def epoch_to_string(epoch):
-    return time.strftime('%d/%b/%Y:%H:%M:%S', time.localtime(epoch))
 
 def diff_epoch(end, start, minutes=False):
     diff = end - start
@@ -24,6 +21,9 @@ def diff_time(end, start, unit='Minutes'):
         return divmod(total_seconds, 60)[0]
     else:
         return total_seconds
+
+def epoch_to_string(epoch, str_format='%d/%b/%Y:%H:%M:%S'):
+    return time.strftime(str_format, time.localtime(epoch))
 
 def normpath(path):
     return os.path.normpath(os.path.join(os.getcwd(), path))
